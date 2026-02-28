@@ -1,0 +1,45 @@
+name: Echo
+options:
+  bundleIdPrefix: ru.aldushin
+  deploymentTarget:
+    macOS: "14.0"
+  xcodeVersion: "15.2"
+
+targets:
+  Echo:
+    type: application
+    platform: macOS
+    sources:
+      - Echo/
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: ru.aldushin.echo
+        SWIFT_VERSION: 5.10
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        ENABLE_HARDENED_RUNTIME: YES
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: ""
+    dependencies:
+      - package: FluidAudio
+    info:
+      path: Echo/Info.plist
+      properties:
+        CFBundleName: Echo
+        CFBundleDisplayName: Echo
+        CFBundleShortVersionString: "0.1.0"
+        CFBundleVersion: "1"
+        NSMicrophoneUsageDescription: Echo использует микрофон для транскрипции в реальном времени.
+        NSDocumentsFolderUsageDescription: Echo сохраняет результаты транскрипции.
+
+  EchoTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - EchoTests/
+    dependencies:
+      - target: Echo
+
+packages:
+  FluidAudio:
+    url: https://github.com/FluidInference/FluidAudio
+    from: 0.1.0
