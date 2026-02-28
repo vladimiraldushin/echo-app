@@ -6,7 +6,7 @@ import FluidAudio
 /// Основной подход — **diarization-driven**:
 /// вместо того чтобы разбивать ASR-вывод на сегменты и потом назначать спикеров,
 /// мы используем сегменты диаризации как опорную структуру и распределяем
-/// токены ASR по этим сегментам. Это решает проблему, когда Parakeet
+/// токены ASR по этим сегментам. Это решает проблему, когда ASR
 /// возвращает один гигантский сегмент для длинного аудио.
 struct SpeakerAligner {
 
@@ -22,7 +22,7 @@ struct SpeakerAligner {
     ///
     /// - Returns: Массив `(text, startTime, endTime, speakerIndex)` в хронологическом порядке.
     func buildSegments(
-        from asrResult: ASRResult,
+        from asrResult: EchoASRResult,
         diarization: DiarizationResult
     ) -> [(text: String, startTime: Double, endTime: Double, speakerIndex: Int)] {
         let dSegs = diarization.segments
@@ -79,9 +79,9 @@ struct SpeakerAligner {
 
     // MARK: – Приватные методы
 
-    /// Распределяет токены по сегментам диаризации.
+    /// Распределяет токены (слова) по сегментам диаризации.
     private func buildFromTokens(
-        tokens: [TokenTiming],
+        tokens: [EchoTokenTiming],
         dSegs: [TimedSpeakerSegment],
         idToIndex: [String: Int]
     ) -> [(text: String, startTime: Double, endTime: Double, speakerIndex: Int)] {
@@ -91,14 +91,13 @@ struct SpeakerAligner {
             let segStart = Double(dSeg.startTimeSeconds)
             let segEnd   = Double(dSeg.endTimeSeconds)
 
-            // Токены, чей startTime попадает в диапазон этого сегмента диаризации
+            // Слова, чей startTime попадает в диапазон этого сегмента диаризации
             let segTokens = tokens.filter { $0.startTime >= segStart && $0.startTime < segEnd }
             guard !segTokens.isEmpty else { continue }
 
             let text = segTokens
                 .map { $0.token }
-                .joined()
-                .replacingOccurrences(of: "▁", with: " ")
+                .joined(separator: " ")
                 .trimmingCharacters(in: .whitespaces)
             guard !text.isEmpty else { continue }
 
@@ -131,7 +130,7 @@ struct SpeakerAligner {
 
         for dSeg in dSegs {
             guard wordIndex < words.count else { break }
-            let segDur  = Double(dSeg.endTimeSeconds - dSeg.startTimeSeconds)
+            let segDur   = Double(dSeg.endTimeSeconds - dSeg.startTimeSeconds)
             let fraction = totalDur > 0 ? segDur / totalDur : 1.0 / Double(dSegs.count)
             let wordCount = max(1, Int(Double(words.count) * fraction))
             let endIdx = min(wordIndex + wordCount, words.count)
@@ -150,7 +149,7 @@ struct SpeakerAligner {
         return result
     }
 
-    /// Объединяет подряд идущие сегменты одного спикера, разделённые паузой < 0.5 с.
+    /// Объединяет подряд идущие сегменты одного спикера, разделённые паузой < 1.5 с.
     /// Снижает фрагментацию и делает транскрипцию читаемее.
     private func mergeAdjacentSameSpeaker(
         _ segments: [(text: String, startTime: Double, endTime: Double, speakerIndex: Int)]
@@ -159,7 +158,7 @@ struct SpeakerAligner {
         for seg in segments {
             if var last = merged.last,
                last.speakerIndex == seg.speakerIndex,
-               seg.startTime - last.endTime < 0.5 {
+               seg.startTime - last.endTime < 1.5 {
                 last = (
                     text: last.text + " " + seg.text,
                     startTime: last.startTime,

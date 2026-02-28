@@ -28,6 +28,9 @@
 		EE9DA18C42F1843C5A0009BB /* EchoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4173C18BECF7B8AE7B19589 /* EchoTests.swift */; };
 		F37E37E9DBF14D1CBACC8F5A /* EchoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69D2C2A8CA81A77FB457A82F /* EchoApp.swift */; };
 		FEF7A06405C68EF27D61F6F5 /* TranscriptionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30A2B2B47200397A69DF9F02 /* TranscriptionService.swift */; };
+		AA01BB02CC03DD04EE05FF06 /* WhisperKit in Frameworks */ = {isa = PBXBuildFile; productRef = AA01BB02CC03DD04EE05FF07 /* WhisperKit */; };
+		AA01BB02CC03DD04EE05FF08 /* EchoASRResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01BB02CC03DD04EE05FF09 /* EchoASRResult.swift */; };
+		AA01BB02CC03DD04EE05FF10 /* WhisperTranscriptionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01BB02CC03DD04EE05FF11 /* WhisperTranscriptionService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -94,6 +97,8 @@
 		E7378C1750C2523FA610CD30 /* ImportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportView.swift; sourceTree = "<group>"; };
 		E9F584D422044F8474ED7824 /* EchoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = EchoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		FFD91D91F199395EEC461241 /* TranscriptionResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionResult.swift; sourceTree = "<group>"; };
+		AA01BB02CC03DD04EE05FF09 /* EchoASRResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EchoASRResult.swift; sourceTree = "<group>"; };
+		AA01BB02CC03DD04EE05FF11 /* WhisperTranscriptionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhisperTranscriptionService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -102,6 +107,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				DFAA2F0206EFC90DEC742284 /* FluidAudio in Frameworks */,
+				AA01BB02CC03DD04EE05FF06 /* WhisperKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -130,6 +136,7 @@
 			isa = PBXGroup;
 			children = (
 				7AC791E4E496DDDAD4886A49 /* AudioFile.swift */,
+				AA01BB02CC03DD04EE05FF09 /* EchoASRResult.swift */,
 				303D16732C725F4234B0975F /* Segment.swift */,
 				887A8AE9D15ABA784F30A901 /* Speaker.swift */,
 				FFD91D91F199395EEC461241 /* TranscriptionResult.swift */,
@@ -162,6 +169,7 @@
 				5C76ED05AEAE9C3033257BDC /* ExportService.swift */,
 				B584EBE4297B797B3329C0CE /* SpeakerAligner.swift */,
 				30A2B2B47200397A69DF9F02 /* TranscriptionService.swift */,
+				AA01BB02CC03DD04EE05FF11 /* WhisperTranscriptionService.swift */,
 				22906D092F5316E90016B103 /* ВСЕ_ИСПРАВЛЕНО.md */,
 				22906D0C2F531E860016B103 /* ПОДДЕРЖКА_WEBM.md */,
 				22906D0E2F5321830016B103 /* WEBM_РЕШЕНИЕ.md */,
@@ -256,6 +264,7 @@
 			name = Echo;
 			packageProductDependencies = (
 				20C780ABE7A5F625B68E1CBC /* FluidAudio */,
+				AA01BB02CC03DD04EE05FF07 /* WhisperKit */,
 			);
 			productName = Echo;
 			productReference = 2042C1C5EE1E0CDC47C60202 /* Echo.app */;
@@ -306,6 +315,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				95CED460C140EF50F901FEEF /* XCRemoteSwiftPackageReference "FluidAudio" */,
+				AA01BB02CC03DD04EE05FF12 /* XCRemoteSwiftPackageReference "WhisperKit" */,
 			);
 			projectDirPath = "";
 			projectRoot = "";
@@ -337,8 +347,10 @@
 				E62CCBCBE11B09EFF213C064 /* Speaker.swift in Sources */,
 				79BDA1DBCFAB2ECBCDEBF293 /* SpeakerAligner.swift in Sources */,
 				43FDF1E51898E84E2C4653C5 /* TranscriptionResult.swift in Sources */,
+				AA01BB02CC03DD04EE05FF08 /* EchoASRResult.swift in Sources */,
 				FEF7A06405C68EF27D61F6F5 /* TranscriptionService.swift in Sources */,
 				94B5897F037055F0AB5E284B /* TranscriptionView.swift in Sources */,
+				AA01BB02CC03DD04EE05FF10 /* WhisperTranscriptionService.swift in Sources */,
 				47AE5C04F686B35425024872 /* TranscriptionViewModel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -594,6 +606,14 @@
 				minimumVersion = 0.1.0;
 			};
 		};
+		AA01BB02CC03DD04EE05FF12 /* XCRemoteSwiftPackageReference "WhisperKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/argmaxinc/WhisperKit";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.9.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -601,6 +621,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 95CED460C140EF50F901FEEF /* XCRemoteSwiftPackageReference "FluidAudio" */;
 			productName = FluidAudio;
+		};
+		AA01BB02CC03DD04EE05FF07 /* WhisperKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AA01BB02CC03DD04EE05FF12 /* XCRemoteSwiftPackageReference "WhisperKit" */;
+			productName = WhisperKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

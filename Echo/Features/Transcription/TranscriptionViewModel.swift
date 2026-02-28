@@ -27,7 +27,7 @@ final class TranscriptionViewModel: ObservableObject {
         var progress: Double {
             switch self {
             case .converting:            return 0.1
-            case .transcribing(let p):   return 0.1 + p * 0.5
+            case .transcribing(let p):   return 0.1 + p * 0.6
             case .diarizing:             return 0.8
             case .completed:             return 1.0
             default:                     return 0
@@ -56,12 +56,12 @@ final class TranscriptionViewModel: ObservableObject {
     }
 
     private let converter = AudioConverter()
-    private let transcriptionService = TranscriptionService()
+    private let whisperService = WhisperTranscriptionService()
     private let diarizationService = DiarizationService()
     private let aligner = SpeakerAligner()
     private let audioDiagnostics = AudioDiagnostics()
 
-    // MARK: – Основной пайплайн (Этап 1: только транскрипция)
+    // MARK: – Основной пайплайн
 
     func process(file: AudioFile) async {
         state = .converting
@@ -70,38 +70,39 @@ final class TranscriptionViewModel: ObservableObject {
             print("\n")
             print("🚀 НАЧАЛО ОБРАБОТКИ: \(file.name)")
             print("═══════════════════════════════════════════════════════════════")
-            
-            // 1. Конвертация
+
+            // 1. Конвертация в 16kHz mono Float32
             let samples = try await converter.convert(url: file.url)
-            
+
             // 1б. Диагностика качества аудио
             let audioQuality = await audioDiagnostics.analyze(samples: samples)
             print(audioQuality.description)
 
-            // 2. Подготовка моделей (если ещё не готовы)
-            if !transcriptionService.modelsReady {
-                print("⏳ Загрузка моделей транскрипции...")
-                try await transcriptionService.prepareModels()
-                print("✅ Модели транскрипции готовы\n")
+            // 2. Подготовка WhisperKit (загрузка модели, если ещё не готова)
+            if !whisperService.modelsReady {
+                print("⏳ Загрузка моделей WhisperKit...")
+                try await whisperService.prepareModels()
+                print("✅ WhisperKit готов\n")
             }
 
-            // 2б. Подготовка моделей диаризации (параллельно с ASR если первый запуск)
+            // 2б. Подготовка диаризации (FluidAudio)
             if !diarizationService.modelsReady {
                 print("⏳ Загрузка моделей диаризации...")
                 try await diarizationService.prepareModels()
                 print("✅ Модели диаризации готовы\n")
             }
 
-            // 3. Транскрипция (получаем сырой ASRResult с токенами)
+            // 3. Транскрипция через WhisperKit (Whisper large-v3, русский)
             state = .transcribing(progress: 0)
 
             print("═══════════════════════════════════════════════════════════════")
-            print("📝 ЭТАП 1: ТРАНСКРИПЦИЯ")
+            print("📝 ЭТАП 1: ТРАНСКРИПЦИЯ (WhisperKit)")
             print("═══════════════════════════════════════════════════════════════\n")
-            print("🌍 Язык: \(selectedLanguage.uppercased())")
+            print("🌍 Язык: \(selectedLanguage.isEmpty ? "авто" : selectedLanguage.uppercased())")
 
-            let asrResult = try await transcriptionService.transcribeRaw(
+            let asrResult = try await whisperService.transcribeRaw(
                 samples: samples,
+                language: selectedLanguage,
                 onProgress: { [weak self] progress in
                     Task { @MainActor [weak self] in
                         self?.state = .transcribing(progress: progress)
@@ -110,53 +111,48 @@ final class TranscriptionViewModel: ObservableObject {
             )
 
             print("\n✅ Транскрипция завершена:")
-            print("   • Токенов: \(asrResult.tokenTimings?.count ?? 0)")
+            print("   • Слов: \(asrResult.tokenTimings?.count ?? 0)")
             print("   • Длительность: \(String(format: "%.1f", asrResult.duration))s")
             print("   • Символов в тексте: \(asrResult.text.count)")
+            print("   • Язык: \(asrResult.language)")
             if let firstToken = asrResult.tokenTimings?.first,
                let lastToken  = asrResult.tokenTimings?.last {
-                print("   • Диапазон токенов: [\(String(format: "%.2f", firstToken.startTime))s – \(String(format: "%.2f", lastToken.endTime))s]")
+                print("   • Диапазон: [\(String(format: "%.2f", firstToken.startTime))s – \(String(format: "%.2f", lastToken.endTime))s]")
             }
 
-            // 4. Диаризация (определение спикеров)
+            // 4. Диаризация (определение спикеров, FluidAudio)
             state = .diarizing
-            
+
             print("═══════════════════════════════════════════════════════════════")
             print("🎙️  ЭТАП 2: ДИАРИЗАЦИЯ (ОПРЕДЕЛЕНИЕ СПИКЕРОВ)")
             print("═══════════════════════════════════════════════════════════════\n")
-            
-            // Настраиваем конфигурацию диаризации
+
             var diarizationConfig = OfflineDiarizerConfig.default
 
             if expectedSpeakers > 0 {
-                // Точное число спикеров — устанавливаем напрямую, порог не нужен
                 diarizationConfig.clustering.numSpeakers = expectedSpeakers
                 print("⚙️  Конфигурация диаризации:")
                 print("   • Режим: фиксированное число спикеров = \(expectedSpeakers)\n")
             } else {
-                // Авто-определение: понижаем порог чтобы не сливать разных спикеров
-                // 0.6 → слишком агрессивное слияние (1 спикер для всего)
-                // 0.3 → консервативное, лучше разделяет голоса в телефонных/WebRTC записях
+                // 0.3 — консервативный порог, хорошо разделяет голоса
                 diarizationConfig.clusteringThreshold = 0.3
                 print("⚙️  Конфигурация диаризации:")
                 print("   • Режим: авто-определение, clusteringThreshold=0.3\n")
             }
-            
+
             let diarizationResult = try await diarizationService.diarize(
                 samples: samples,
                 config: diarizationConfig
             )
-            
+
             // Диагностика диаризации
             let diarizationAnalysis = DiarizationDiagnostics.analyze(diarizationResult)
             print(diarizationAnalysis.description)
-            
-            // Визуальный таймлайн
             print(DiarizationDiagnostics.visualizeTimeline(diarizationResult, width: 60))
 
             // 5. Выравнивание: diarization-driven сегментация
             print("═══════════════════════════════════════════════════════════════")
-            print("🔗 ЭТАП 3: ВЫРАВНИВАНИЕ (ТОКЕНЫ → СЕГМЕНТЫ ДИАРИЗАЦИИ)")
+            print("🔗 ЭТАП 3: ВЫРАВНИВАНИЕ (СЛОВА → СЕГМЕНТЫ ДИАРИЗАЦИИ)")
             print("═══════════════════════════════════════════════════════════════\n")
 
             let aligned = aligner.buildSegments(from: asrResult, diarization: diarizationResult)
@@ -173,9 +169,8 @@ final class TranscriptionViewModel: ObservableObject {
             print("✅ СБОРКА ФИНАЛЬНОГО РЕЗУЛЬТАТА")
             print("═══════════════════════════════════════════════════════════════\n")
 
-            let transcriptionResult = TranscriptionResult(language: selectedLanguage)
+            let transcriptionResult = TranscriptionResult(language: asrResult.language)
 
-            // Создаём объекты Speaker для каждого обнаруженного спикера
             for i in 0..<numSpeakers {
                 transcriptionResult.speakers.append(Speaker(index: i))
             }
@@ -192,14 +187,14 @@ final class TranscriptionViewModel: ObservableObject {
             }
 
             self.result = transcriptionResult
-            
+
             print("📊 Итого:")
             print("   • Сегментов: \(transcriptionResult.segments.count)")
             print("   • Спикеров: \(numSpeakers)")
-            print("   • Язык: \(selectedLanguage.uppercased())")
+            print("   • Язык: \(asrResult.language)")
             print("\n🎉 ОБРАБОТКА ЗАВЕРШЕНА УСПЕШНО!")
             print("═══════════════════════════════════════════════════════════════\n")
-            
+
             state = .completed
 
         } catch {
