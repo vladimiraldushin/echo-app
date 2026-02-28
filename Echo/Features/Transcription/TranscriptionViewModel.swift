@@ -8,6 +8,7 @@ final class TranscriptionViewModel: ObservableObject {
         case idle
         case converting
         case transcribing(progress: Double)
+        case diarizing
         case completed
         case failed(String)
 
@@ -16,6 +17,7 @@ final class TranscriptionViewModel: ObservableObject {
             case .idle:                      return "Ожидание"
             case .converting:                return "Конвертация аудио..."
             case .transcribing(let p):       return "Транскрипция \(Int(p * 100))%"
+            case .diarizing:                 return "Определение спикеров..."
             case .completed:                 return "Готово"
             case .failed(let msg):           return "Ошибка: \(msg)"
             }
@@ -24,7 +26,8 @@ final class TranscriptionViewModel: ObservableObject {
         var progress: Double {
             switch self {
             case .converting:            return 0.1
-            case .transcribing(let p):   return 0.1 + p * 0.9
+            case .transcribing(let p):   return 0.1 + p * 0.5
+            case .diarizing:             return 0.8
             case .completed:             return 1.0
             default:                     return 0
             }
@@ -33,6 +36,7 @@ final class TranscriptionViewModel: ObservableObject {
         var isProcessing: Bool {
             if case .converting = self { return true }
             if case .transcribing = self { return true }
+            if case .diarizing = self { return true }
             return false
         }
     }
@@ -51,6 +55,8 @@ final class TranscriptionViewModel: ObservableObject {
 
     private let converter = AudioConverter()
     private let transcriptionService = TranscriptionService()
+    private let diarizationService = DiarizationService()
+    private let aligner = SpeakerAligner()
 
     // MARK: – Основной пайплайн (Этап 1: только транскрипция)
 
@@ -66,6 +72,11 @@ final class TranscriptionViewModel: ObservableObject {
                 try await transcriptionService.prepareModels()
             }
 
+            // 2б. Подготовка моделей диаризации (параллельно с ASR если первый запуск)
+            if !diarizationService.modelsReady {
+                try await diarizationService.prepareModels()
+            }
+
             // 3. Транскрипция
             state = .transcribing(progress: 0)
             let rawSegments = try await transcriptionService.transcribe(
@@ -77,14 +88,28 @@ final class TranscriptionViewModel: ObservableObject {
                 }
             )
 
-            // 4. Сборка результата
-            let transcriptionResult = TranscriptionResult(language: selectedLanguage)
-            for raw in rawSegments {
+            // 4. Диаризация (определение спикеров)
+            state = .diarizing
+            let diarizationResult = try await diarizationService.diarize(samples: samples)
+
+            // 5. Выравнивание: каждому ASR-сегменту назначаем спикера
+            let aligned = aligner.align(segments: rawSegments, diarization: diarizationResult)
+            let numSpeakers = aligner.speakerCount(from: diarizationResult)
+
+            // 6. Сборка результата
+            let transcriptionResult = TranscriptionResult(language: "en")
+
+            // Создаём объекты Speaker для каждого обнаруженного спикера
+            for i in 0..<numSpeakers {
+                transcriptionResult.speakers.append(Speaker(index: i))
+            }
+
+            for (raw, speakerIndex) in aligned {
                 let segment = Segment(
                     text: raw.text,
                     startTime: raw.startTime,
                     endTime: raw.endTime,
-                    speakerIndex: -1,
+                    speakerIndex: speakerIndex,
                     order: raw.order
                 )
                 transcriptionResult.segments.append(segment)

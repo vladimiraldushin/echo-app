@@ -36,7 +36,7 @@ struct TranscriptionView: View {
 
             // Контент
             switch vm.state {
-            case .idle, .converting, .transcribing:
+            case .idle, .converting, .transcribing, .diarizing:
                 processingPlaceholder
 
             case .completed:
