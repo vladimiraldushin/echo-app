@@ -48,14 +48,7 @@ actor AudioConverter {
     // MARK: – Приватные методы
 
     private func exportToWAV(asset: AVAsset, outputURL: URL) async throws {
-        guard let session = AVAssetExportSession(
-            asset: asset,
-            presetName: AVAssetExportPresetAppleM4A   // промежуточный шаг
-        ) else {
-            throw ConversionError.exportFailed("Не удалось создать AVAssetExportSession")
-        }
-
-        // Используем passthrough в WAV через AVAssetWriter для точного контроля формата
+        // Экспортируем с точным контролем формата через AVAssetWriter
         try await exportWithWriter(asset: asset, outputURL: outputURL)
     }
 
@@ -119,27 +112,32 @@ actor AudioConverter {
 
     private func readSamples(from url: URL) throws -> [Float] {
         let audioFile = try AVAudioFile(forReading: url)
-
-        guard let format = AVAudioFormat(
-            commonFormat: .pcmFormatFloat32,
-            sampleRate: targetSampleRate,
-            channels: targetChannels,
-            interleaved: false
+        
+        var samples: [Float] = []
+        samples.reserveCapacity(Int(audioFile.length))
+        
+        // Читаем файл по частям для экономии памяти
+        let bufferSize: AVAudioFrameCount = 4096
+        guard let buffer = AVAudioPCMBuffer(
+            pcmFormat: audioFile.processingFormat,
+            frameCapacity: bufferSize
         ) else {
-            throw ConversionError.readFailed("Не удалось создать аудио формат")
-        }
-
-        let frameCount = AVAudioFrameCount(audioFile.length)
-        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) else {
             throw ConversionError.readFailed("Не удалось выделить буфер")
         }
-
-        try audioFile.read(into: buffer)
-
-        guard let channelData = buffer.floatChannelData?[0] else {
-            throw ConversionError.readFailed("Нет данных канала")
+        
+        while audioFile.framePosition < audioFile.length {
+            try audioFile.read(into: buffer)
+            
+            guard let channelData = buffer.floatChannelData?[0] else {
+                throw ConversionError.readFailed("Нет данных канала")
+            }
+            
+            samples.append(contentsOf: UnsafeBufferPointer(
+                start: channelData,
+                count: Int(buffer.frameLength)
+            ))
         }
-
-        return Array(UnsafeBufferPointer(start: channelData, count: Int(buffer.frameLength)))
+        
+        return samples
     }
 }
