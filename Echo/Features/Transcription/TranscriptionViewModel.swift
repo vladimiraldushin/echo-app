@@ -127,16 +127,19 @@ final class TranscriptionViewModel: ObservableObject {
             
             // Настраиваем конфигурацию диаризации
             var diarizationConfig = OfflineDiarizerConfig.default
-            diarizationConfig.clusteringThreshold = 0.6  // Понижаем для лучшего различения
-            
-            print("⚙️  Конфигурация диаризации:")
-            print("   • clusteringThreshold: \(diarizationConfig.clusteringThreshold)")
-            
+
             if expectedSpeakers > 0 {
+                // Точное число спикеров — устанавливаем напрямую, порог не нужен
                 diarizationConfig.clustering.numSpeakers = expectedSpeakers
-                print("   • Ожидаемое количество: \(expectedSpeakers) спикеров\n")
+                print("⚙️  Конфигурация диаризации:")
+                print("   • Режим: фиксированное число спикеров = \(expectedSpeakers)\n")
             } else {
-                print("   • Автоопределение количества спикеров\n")
+                // Авто-определение: понижаем порог чтобы не сливать разных спикеров
+                // 0.6 → слишком агрессивное слияние (1 спикер для всего)
+                // 0.3 → консервативное, лучше разделяет голоса в телефонных/WebRTC записях
+                diarizationConfig.clusteringThreshold = 0.3
+                print("⚙️  Конфигурация диаризации:")
+                print("   • Режим: авто-определение, clusteringThreshold=0.3\n")
             }
             
             let diarizationResult = try await diarizationService.diarize(
