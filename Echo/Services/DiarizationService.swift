@@ -55,12 +55,15 @@ final class DiarizationService: ObservableObject {
         let targetConfig = config ?? createOptimizedConfig()
         
         // Если конфигурация изменилась, пересоздаём diarizer
-        if currentConfig?.clusteringThreshold != targetConfig.clusteringThreshold ||
-           currentConfig?.clustering.minSpeakers != targetConfig.clustering.minSpeakers ||
-           currentConfig?.clustering.maxSpeakers != targetConfig.clustering.maxSpeakers ||
-           currentConfig?.clustering.numSpeakers != targetConfig.clustering.numSpeakers {
-            
-            // Пересоздаём с новой конфигурацией
+        let configChanged = currentConfig == nil ||
+            currentConfig?.clusteringThreshold != targetConfig.clusteringThreshold ||
+            currentConfig?.clustering.minSpeakers != targetConfig.clustering.minSpeakers ||
+            currentConfig?.clustering.maxSpeakers != targetConfig.clustering.maxSpeakers ||
+            currentConfig?.clustering.numSpeakers != targetConfig.clustering.numSpeakers ||
+            currentConfig?.segmentationStepRatio != targetConfig.segmentationStepRatio ||
+            currentConfig?.Fb != targetConfig.Fb
+
+        if configChanged {
             modelsReady = false
             try await prepareModels(config: targetConfig)
         }

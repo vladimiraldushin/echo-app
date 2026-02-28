@@ -10,15 +10,21 @@ import FluidAudio
 /// возвращает один гигантский сегмент для длинного аудио.
 struct SpeakerAligner {
 
+    /// Максимальная длина сегмента до принудительного разделения на паузах (секунды).
+    private let maxSegmentDuration: Double = 15.0
+
+    /// Минимальная пауза между словами для разделения длинного сегмента (секунды).
+    private let minPauseForSplit: Double = 0.4
+
     // MARK: – Основной метод (diarization-driven)
 
     /// Строит сегменты из токенов ASR, используя диаризацию как опорную структуру.
     ///
     /// Алгоритм:
     /// 1. Для каждого сегмента диаризации собираем токены, чей `startTime` попадает в этот диапазон.
-    /// 2. Объединяем соседние сегменты одного спикера (убираем «лесенку» коротких реплик).
-    ///
-    /// Если токенов нет — пропорционально распределяем текст по сегментам диаризации.
+    /// 2. **Длинные сегменты (> 15с) разбиваем на паузах** — это решает проблему «мега-сегментов»
+    ///    FluidAudio, которые захватывают обоих спикеров в одном 40-секундном куске.
+    /// 3. Объединяем соседние сегменты одного спикера (убираем «лесенку» коротких реплик).
     ///
     /// - Returns: Массив `(text, startTime, endTime, speakerIndex)` в хронологическом порядке.
     func buildSegments(
@@ -31,10 +37,16 @@ struct SpeakerAligner {
         let idToIndex = buildSpeakerIndex(from: dSegs)
 
         if let tokens = asrResult.tokenTimings, !tokens.isEmpty {
-            print("✅ Diarization-driven: \(tokens.count) токенов → \(dSegs.count) сегментов диаризации")
+            print("✅ Diarization-driven: \(tokens.count) слов → \(dSegs.count) сегментов диаризации")
             let raw = buildFromTokens(tokens: tokens, dSegs: dSegs, idToIndex: idToIndex)
-            let merged = mergeAdjacentSameSpeaker(raw)
-            print("   Итого после слияния: \(merged.count) сегментов")
+            print("   После распределения: \(raw.count) сегментов")
+
+            // Дробим длинные сегменты на паузах
+            let split = splitLongSegments(raw, tokens: tokens)
+            print("   После разбиения длинных (>\(Int(maxSegmentDuration))с): \(split.count) сегментов")
+
+            let merged = mergeAdjacentSameSpeaker(split)
+            print("   После слияния одинаковых спикеров: \(merged.count) сегментов")
             return merged
         }
 
@@ -55,8 +67,6 @@ struct SpeakerAligner {
 
     // MARK: – Устаревший метод (оставлен для совместимости)
 
-    /// Назначает индекс спикера каждому ASR-сегменту по максимальному перекрытию.
-    /// Не используется при diarization-driven подходе.
     func align(
         segments: [RawSegment],
         diarization: DiarizationResult
@@ -77,9 +87,8 @@ struct SpeakerAligner {
         }
     }
 
-    // MARK: – Приватные методы
+    // MARK: – Распределение токенов по сегментам
 
-    /// Распределяет токены (слова) по сегментам диаризации.
     private func buildFromTokens(
         tokens: [EchoTokenTiming],
         dSegs: [TimedSpeakerSegment],
@@ -91,7 +100,6 @@ struct SpeakerAligner {
             let segStart = Double(dSeg.startTimeSeconds)
             let segEnd   = Double(dSeg.endTimeSeconds)
 
-            // Слова, чей startTime попадает в диапазон этого сегмента диаризации
             let segTokens = tokens.filter { $0.startTime >= segStart && $0.startTime < segEnd }
             guard !segTokens.isEmpty else { continue }
 
@@ -113,8 +121,136 @@ struct SpeakerAligner {
         return result
     }
 
-    /// Пропорционально распределяет слова текста по сегментам диаризации.
-    /// Используется как фолбэк, если токены не содержат таймингов.
+    // MARK: – Разбиение длинных сегментов
+
+    /// Дробит сегменты длиннее `maxSegmentDuration` на самых длинных паузах между словами.
+    ///
+    /// Это критичный шаг: FluidAudio иногда создаёт один сегмент на 40 секунд,
+    /// в котором оба спикера. Мы находим паузу ≥ 0.4с в пословных таймингах
+    /// и разрезаем по ней. Спикер остаётся тем же (мы не можем его переопределить),
+    /// но при слиянии с соседними сегментами он может быть скорректирован.
+    private func splitLongSegments(
+        _ segments: [(text: String, startTime: Double, endTime: Double, speakerIndex: Int)],
+        tokens: [EchoTokenTiming]
+    ) -> [(text: String, startTime: Double, endTime: Double, speakerIndex: Int)] {
+        var result: [(text: String, startTime: Double, endTime: Double, speakerIndex: Int)] = []
+
+        for seg in segments {
+            let duration = seg.endTime - seg.startTime
+            if duration <= maxSegmentDuration {
+                result.append(seg)
+                continue
+            }
+
+            // Собираем токены этого сегмента
+            let segTokens = tokens.filter {
+                $0.startTime >= seg.startTime && $0.startTime < seg.endTime
+            }
+
+            if segTokens.count < 2 {
+                result.append(seg)
+                continue
+            }
+
+            // Находим все паузы между словами
+            var pauses: [(index: Int, gap: Double)] = []
+            for i in 1..<segTokens.count {
+                let gap = segTokens[i].startTime - segTokens[i - 1].endTime
+                if gap >= minPauseForSplit {
+                    pauses.append((index: i, gap: gap))
+                }
+            }
+
+            if pauses.isEmpty {
+                // Нет пауз — оставляем как есть
+                result.append(seg)
+                continue
+            }
+
+            // Сортируем паузы по убыванию длительности — рубим на самой длинной
+            let sortedPauses = pauses.sorted { $0.gap > $1.gap }
+
+            // Определяем точки разреза: рекурсивно делим пока все части ≤ maxSegmentDuration
+            let splitIndices = findSplitPoints(
+                segTokens: segTokens,
+                pauses: sortedPauses,
+                maxDuration: maxSegmentDuration
+            )
+
+            // Строим под-сегменты по точкам разреза
+            var sliceStart = 0
+            let allSplits = (splitIndices + [segTokens.count]).sorted()
+
+            for splitEnd in allSplits {
+                let sliceTokens = Array(segTokens[sliceStart..<splitEnd])
+                guard !sliceTokens.isEmpty else { continue }
+
+                let text = sliceTokens
+                    .map { $0.token }
+                    .joined(separator: " ")
+                    .trimmingCharacters(in: .whitespaces)
+
+                if !text.isEmpty {
+                    result.append((
+                        text: text,
+                        startTime: sliceTokens.first!.startTime,
+                        endTime: sliceTokens.last!.endTime,
+                        speakerIndex: seg.speakerIndex
+                    ))
+                }
+                sliceStart = splitEnd
+            }
+
+            let splitCount = allSplits.count
+            if splitCount > 1 {
+                print("   ✂️  Разрезан сегмент [\(String(format: "%.1f", seg.startTime))–\(String(format: "%.1f", seg.endTime))s] (\(String(format: "%.0f", duration))с) → \(splitCount) частей")
+            }
+        }
+
+        return result
+    }
+
+    /// Находит оптимальные точки разреза для массива токенов,
+    /// чтобы все результирующие части были ≤ maxDuration.
+    private func findSplitPoints(
+        segTokens: [EchoTokenTiming],
+        pauses: [(index: Int, gap: Double)],
+        maxDuration: Double
+    ) -> [Int] {
+        guard segTokens.count >= 2 else { return [] }
+
+        let totalStart = segTokens.first!.startTime
+        let totalEnd = segTokens.last!.endTime
+
+        if totalEnd - totalStart <= maxDuration {
+            return []
+        }
+
+        // Ищем паузу, ближайшую к середине
+        let midTime = (totalStart + totalEnd) / 2
+        let bestPause = pauses
+            .min { abs(segTokens[$0.index].startTime - midTime) < abs(segTokens[$1.index].startTime - midTime) }
+
+        guard let pause = bestPause else { return [] }
+
+        // Рекурсивно проверяем обе половины
+        let leftTokens = Array(segTokens[0..<pause.index])
+        let rightTokens = Array(segTokens[pause.index...])
+
+        let leftPauses = pauses.filter { $0.index < pause.index }
+        let rightPauses = pauses.map { (index: $0.index - pause.index, gap: $0.gap) }
+            .filter { $0.index > 0 && $0.index < rightTokens.count }
+
+        var splits = [pause.index]
+        splits += findSplitPoints(segTokens: leftTokens, pauses: leftPauses, maxDuration: maxDuration)
+        splits += findSplitPoints(segTokens: rightTokens, pauses: rightPauses, maxDuration: maxDuration)
+            .map { $0 + pause.index }
+
+        return splits
+    }
+
+    // MARK: – Фолбэк: пропорциональное распределение текста
+
     private func buildFromPlainText(
         text: String,
         duration: TimeInterval,
@@ -149,8 +285,9 @@ struct SpeakerAligner {
         return result
     }
 
+    // MARK: – Слияние соседних сегментов одного спикера
+
     /// Объединяет подряд идущие сегменты одного спикера, разделённые паузой < 1.5 с.
-    /// Снижает фрагментацию и делает транскрипцию читаемее.
     private func mergeAdjacentSameSpeaker(
         _ segments: [(text: String, startTime: Double, endTime: Double, speakerIndex: Int)]
     ) -> [(text: String, startTime: Double, endTime: Double, speakerIndex: Int)] {
@@ -172,6 +309,8 @@ struct SpeakerAligner {
         }
         return merged
     }
+
+    // MARK: – Вспомогательные
 
     private func buildSpeakerIndex(from segments: [TimedSpeakerSegment]) -> [String: Int] {
         var map: [String: Int] = [:]

@@ -127,18 +127,25 @@ final class TranscriptionViewModel: ObservableObject {
             print("🎙️  ЭТАП 2: ДИАРИЗАЦИЯ (ОПРЕДЕЛЕНИЕ СПИКЕРОВ)")
             print("═══════════════════════════════════════════════════════════════\n")
 
+            // Оптимизированная конфигурация для телефонных разговоров:
+            //   stepRatio  0.1 — шаг 1с вместо 2с, в 2 раза точнее обнаруживает смену спикера
+            //   Fb = 17    — агрессивное разделение (VBx recall), рекомендация авторов VBx для 2-3 спикеров
+            //   minSegment 0.5 — не выбрасывать короткие реплики (< 1с)
             var diarizationConfig = OfflineDiarizerConfig.default
+            diarizationConfig.segmentationStepRatio = 0.1
+            diarizationConfig.Fb = 17.0
+            diarizationConfig.minSegmentDuration = 0.5
 
             if expectedSpeakers > 0 {
-                diarizationConfig.clustering.numSpeakers = expectedSpeakers
+                diarizationConfig = diarizationConfig.withSpeakers(exactly: expectedSpeakers)
                 print("⚙️  Конфигурация диаризации:")
-                print("   • Режим: фиксированное число спикеров = \(expectedSpeakers)\n")
+                print("   • Режим: фиксированное число спикеров = \(expectedSpeakers)")
             } else {
-                // 0.3 — консервативный порог, хорошо разделяет голоса
-                diarizationConfig.clusteringThreshold = 0.3
+                diarizationConfig = diarizationConfig.withSpeakers(exactly: 2)
                 print("⚙️  Конфигурация диаризации:")
-                print("   • Режим: авто-определение, clusteringThreshold=0.3\n")
+                print("   • Режим: телефонный звонок (по умолчанию 2 спикера)")
             }
+            print("   • stepRatio=0.1, Fb=17.0, minSegment=0.5s\n")
 
             let diarizationResult = try await diarizationService.diarize(
                 samples: samples,
