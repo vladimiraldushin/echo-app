@@ -1,5 +1,6 @@
 import Foundation
 import AVFoundation
+import CoreMedia
 
 /// Конвертирует любой аудио/видеофайл в массив Float32 сэмплов (16kHz mono)
 /// — формат, требуемый FluidAudio SDK
@@ -36,7 +37,7 @@ actor AudioConverter {
 
         // Экспортируем в временный WAV
         let tempURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent(UUID().uuidString + ".wav")
+            .appendingPathComponent(UUID().uuidString + ".caf")
 
         defer { try? FileManager.default.removeItem(at: tempURL) }
 
@@ -59,7 +60,7 @@ actor AudioConverter {
     }
 
     private func exportWithWriter(asset: AVAsset, outputURL: URL) async throws {
-        let writer = try AVAssetWriter(outputURL: outputURL, fileType: .wav)
+        let writer = try AVAssetWriter(outputURL: outputURL, fileType: .caf)
 
         let outputSettings: [String: Any] = [
             AVFormatIDKey: kAudioFormatLinearPCM,
@@ -96,7 +97,7 @@ actor AudioConverter {
 
         reader.startReading()
         writer.startWriting()
-        writer.startSession(atSourceTime: .zero)
+        writer.startSession(atSourceTime: CMTime.zero)
 
         await withCheckedContinuation { continuation in
             writerInput.requestMediaDataWhenReady(on: DispatchQueue(label: "audio.converter")) {
