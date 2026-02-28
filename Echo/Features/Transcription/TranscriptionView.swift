@@ -169,6 +169,24 @@ struct TranscriptionView: View {
                 .pickerStyle(.segmented)
                 .labelsHidden()
             }
+            
+            // Количество спикеров
+            GroupBox("Спикеры") {
+                VStack(alignment: .leading, spacing: 8) {
+                    Picker("Количество", selection: $vm.expectedSpeakers) {
+                        Text("Авто").tag(-1)
+                        Text("2").tag(2)
+                        Text("3").tag(3)
+                        Text("4").tag(4)
+                        Text("5+").tag(5)
+                    }
+                    .pickerStyle(.menu)
+                    
+                    Text("Укажите, если знаете точно")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
 
             // Экспорт
             if case .completed = vm.state {

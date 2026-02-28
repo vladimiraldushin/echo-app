@@ -3,13 +3,16 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 63;
 	objects = {
 
 /* Begin PBXBuildFile section */
 		0AC6A142F4A307309B544453 /* ImportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7378C1750C2523FA610CD30 /* ImportView.swift */; };
 		0E0C67627C79DE10F51E5675 /* DiarizationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03A1883B5299DCA572E86351 /* DiarizationService.swift */; };
 		22901B665A11A7FD60205B6B /* ImportViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54BB872C1F835CE8F37587A2 /* ImportViewModel.swift */; };
+		22906CFC2F53106F0016B103 /* AudioDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22906CFB2F53106F0016B103 /* AudioDiagnostics.swift */; };
+		22906CFE2F5310930016B103 /* DiarizationDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22906CFD2F5310930016B103 /* DiarizationDiagnostics.swift */; };
+		22906D002F5310B60016B103 /* AlignmentDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22906CFF2F5310B60016B103 /* AlignmentDiagnostics.swift */; };
 		33A9D6ACFFF76A625C942289 /* AudioConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EAE19C4E3EE9EF7594BC2EE /* AudioConverter.swift */; };
 		43FDF1E51898E84E2C4653C5 /* TranscriptionResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFD91D91F199395EEC461241 /* TranscriptionResult.swift */; };
 		46698312D2C090CB8A208A18 /* AudioFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AC791E4E496DDDAD4886A49 /* AudioFile.swift */; };
@@ -42,6 +45,39 @@
 		14F5956E5B6A1FD449395BC0 /* TranscriptionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionView.swift; sourceTree = "<group>"; };
 		1EAE19C4E3EE9EF7594BC2EE /* AudioConverter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioConverter.swift; sourceTree = "<group>"; };
 		2042C1C5EE1E0CDC47C60202 /* Echo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Echo.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		2251CB2C2F530FC500B40D2F /* ДИАГНОСТИКА_ПРОБЛЕМ.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "ДИАГНОСТИКА_ПРОБЛЕМ.md"; sourceTree = "<group>"; };
+		22906CFB2F53106F0016B103 /* AudioDiagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioDiagnostics.swift; sourceTree = "<group>"; };
+		22906CFD2F5310930016B103 /* DiarizationDiagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiarizationDiagnostics.swift; sourceTree = "<group>"; };
+		22906CFF2F5310B60016B103 /* AlignmentDiagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlignmentDiagnostics.swift; sourceTree = "<group>"; };
+		22906D012F5311590016B103 /* РАСШИРЕННАЯ_ДИАГНОСТИКА.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "РАСШИРЕННАЯ_ДИАГНОСТИКА.md"; sourceTree = "<group>"; };
+		22906D022F53116B0016B103 /* БЫСТРЫЙ_СТАРТ.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "БЫСТРЫЙ_СТАРТ.md"; sourceTree = "<group>"; };
+		22906D032F5311930016B103 /* СВОДКА_ИЗМЕНЕНИЙ.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "СВОДКА_ИЗМЕНЕНИЙ.md"; sourceTree = "<group>"; };
+		22906D042F5311D30016B103 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		22906D052F5312230016B103 /* КАК_ЧИТАТЬ_ЛОГИ.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "КАК_ЧИТАТЬ_ЛОГИ.md"; sourceTree = "<group>"; };
+		22906D062F5312410016B103 /* ШПАРГАЛКА.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "ШПАРГАЛКА.md"; sourceTree = "<group>"; };
+		22906D072F5312730016B103 /* УСТАНОВКА_ЗАВЕРШЕНА.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "УСТАНОВКА_ЗАВЕРШЕНА.md"; sourceTree = "<group>"; };
+		22906D082F53137A0016B103 /* ИСПРАВЛЕНИЕ_API.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "ИСПРАВЛЕНИЕ_API.md"; sourceTree = "<group>"; };
+		22906D092F5316E90016B103 /* ВСЕ_ИСПРАВЛЕНО.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "ВСЕ_ИСПРАВЛЕНО.md"; sourceTree = "<group>"; };
+		22906D0A2F531A2A0016B103 /* ФИНАЛЬНЫЕ_ИСПРАВЛЕНИЯ.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "ФИНАЛЬНЫЕ_ИСПРАВЛЕНИЯ.md"; sourceTree = "<group>"; };
+		22906D0B2F531BF00016B103 /* РЕШЕНИЕ_ПРОБЛЕМЫ.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "РЕШЕНИЕ_ПРОБЛЕМЫ.md"; sourceTree = "<group>"; };
+		22906D0C2F531E860016B103 /* ПОДДЕРЖКА_WEBM.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "ПОДДЕРЖКА_WEBM.md"; sourceTree = "<group>"; };
+		22906D0D2F531E980016B103 /* WEBM_ГОТОВО.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "WEBM_ГОТОВО.md"; sourceTree = "<group>"; };
+		22906D0E2F5321830016B103 /* WEBM_РЕШЕНИЕ.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "WEBM_РЕШЕНИЕ.md"; sourceTree = "<group>"; };
+		22906D0F2F5322180016B103 /* АВТОКОНВЕРТАЦИЯ_WEBM.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "АВТОКОНВЕРТАЦИЯ_WEBM.md"; sourceTree = "<group>"; };
+		22906D102F53238F0016B103 /* ФИНАЛЬНОЕ_ИСПРАВЛЕНИЕ.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "ФИНАЛЬНОЕ_ИСПРАВЛЕНИЕ.md"; sourceTree = "<group>"; };
+		22906D112F53264F0016B103 /* WEBM_АВТОМАТИЧЕСКИ.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "WEBM_АВТОМАТИЧЕСКИ.md"; sourceTree = "<group>"; };
+		22906D122F5326690016B103 /* WEBM_КРАТКАЯ_ИНСТРУКЦИЯ.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "WEBM_КРАТКАЯ_ИНСТРУКЦИЯ.md"; sourceTree = "<group>"; };
+		22906D132F5329490016B103 /* УСТАНОВКА_FFMPEG.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "УСТАНОВКА_FFMPEG.md"; sourceTree = "<group>"; };
+		22906D142F5329A40016B103 /* ОКОНЧАТЕЛЬНОЕ_РЕШЕНИЕ_WEBM.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "ОКОНЧАТЕЛЬНОЕ_РЕШЕНИЕ_WEBM.md"; sourceTree = "<group>"; };
+		22906D152F5329B00016B103 /* QUICK_FIX.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = QUICK_FIX.md; sourceTree = "<group>"; };
+		22906D162F5329C30016B103 /* ИТОГОВОЕ_РЕШЕНИЕ.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "ИТОГОВОЕ_РЕШЕНИЕ.md"; sourceTree = "<group>"; };
+		22906D172F532A540016B103 /* АВТОУСТАНОВКА_FFMPEG.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "АВТОУСТАНОВКА_FFMPEG.md"; sourceTree = "<group>"; };
+		22906D182F532A640016B103 /* АВТОУСТАНОВКА_ГОТОВО.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "АВТОУСТАНОВКА_ГОТОВО.md"; sourceTree = "<group>"; };
+		22906D192F532A850016B103 /* ФИНАЛ_АВТОУСТАНОВКА.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "ФИНАЛ_АВТОУСТАНОВКА.md"; sourceTree = "<group>"; };
+		22906D1A2F532AF40016B103 /* ПОЛНАЯ_АВТОМАТИЗАЦИЯ.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "ПОЛНАЯ_АВТОМАТИЗАЦИЯ.md"; sourceTree = "<group>"; };
+		22906D1B2F532B090016B103 /* ПОЛНАЯ_АВТОМАТИЗАЦИЯ_ГОТОВО.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "ПОЛНАЯ_АВТОМАТИЗАЦИЯ_ГОТОВО.md"; sourceTree = "<group>"; };
+		22906D1C2F532B3D0016B103 /* ФИНАЛ_ПОЛНАЯ_АВТОМАТИЗАЦИЯ.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "ФИНАЛ_ПОЛНАЯ_АВТОМАТИЗАЦИЯ.md"; sourceTree = "<group>"; };
+		22906D1D2F532B520016B103 /* ИТОГ.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "ИТОГ.md"; sourceTree = "<group>"; };
 		303D16732C725F4234B0975F /* Segment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Segment.swift; sourceTree = "<group>"; };
 		30A2B2B47200397A69DF9F02 /* TranscriptionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionService.swift; sourceTree = "<group>"; };
 		54BB872C1F835CE8F37587A2 /* ImportViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportViewModel.swift; sourceTree = "<group>"; };
@@ -126,6 +162,24 @@
 				5C76ED05AEAE9C3033257BDC /* ExportService.swift */,
 				B584EBE4297B797B3329C0CE /* SpeakerAligner.swift */,
 				30A2B2B47200397A69DF9F02 /* TranscriptionService.swift */,
+				22906D092F5316E90016B103 /* ВСЕ_ИСПРАВЛЕНО.md */,
+				22906D0C2F531E860016B103 /* ПОДДЕРЖКА_WEBM.md */,
+				22906D0E2F5321830016B103 /* WEBM_РЕШЕНИЕ.md */,
+				22906D0F2F5322180016B103 /* АВТОКОНВЕРТАЦИЯ_WEBM.md */,
+				22906D102F53238F0016B103 /* ФИНАЛЬНОЕ_ИСПРАВЛЕНИЕ.md */,
+				22906D112F53264F0016B103 /* WEBM_АВТОМАТИЧЕСКИ.md */,
+				22906D122F5326690016B103 /* WEBM_КРАТКАЯ_ИНСТРУКЦИЯ.md */,
+				22906D132F5329490016B103 /* УСТАНОВКА_FFMPEG.md */,
+				22906D142F5329A40016B103 /* ОКОНЧАТЕЛЬНОЕ_РЕШЕНИЕ_WEBM.md */,
+				22906D152F5329B00016B103 /* QUICK_FIX.md */,
+				22906D162F5329C30016B103 /* ИТОГОВОЕ_РЕШЕНИЕ.md */,
+				22906D172F532A540016B103 /* АВТОУСТАНОВКА_FFMPEG.md */,
+				22906D182F532A640016B103 /* АВТОУСТАНОВКА_ГОТОВО.md */,
+				22906D192F532A850016B103 /* ФИНАЛ_АВТОУСТАНОВКА.md */,
+				22906D1A2F532AF40016B103 /* ПОЛНАЯ_АВТОМАТИЗАЦИЯ.md */,
+				22906D1B2F532B090016B103 /* ПОЛНАЯ_АВТОМАТИЗАЦИЯ_ГОТОВО.md */,
+				22906D1C2F532B3D0016B103 /* ФИНАЛ_ПОЛНАЯ_АВТОМАТИЗАЦИЯ.md */,
+				22906D1D2F532B520016B103 /* ИТОГ.md */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -136,6 +190,21 @@
 				58786B4FCDFD0596CC8EB170 /* SegmentRowView.swift */,
 				14F5956E5B6A1FD449395BC0 /* TranscriptionView.swift */,
 				DA0ACF848D64D281A26D68F6 /* TranscriptionViewModel.swift */,
+				2251CB2C2F530FC500B40D2F /* ДИАГНОСТИКА_ПРОБЛЕМ.md */,
+				22906CFB2F53106F0016B103 /* AudioDiagnostics.swift */,
+				22906CFD2F5310930016B103 /* DiarizationDiagnostics.swift */,
+				22906CFF2F5310B60016B103 /* AlignmentDiagnostics.swift */,
+				22906D012F5311590016B103 /* РАСШИРЕННАЯ_ДИАГНОСТИКА.md */,
+				22906D022F53116B0016B103 /* БЫСТРЫЙ_СТАРТ.md */,
+				22906D032F5311930016B103 /* СВОДКА_ИЗМЕНЕНИЙ.md */,
+				22906D042F5311D30016B103 /* README.md */,
+				22906D052F5312230016B103 /* КАК_ЧИТАТЬ_ЛОГИ.md */,
+				22906D062F5312410016B103 /* ШПАРГАЛКА.md */,
+				22906D072F5312730016B103 /* УСТАНОВКА_ЗАВЕРШЕНА.md */,
+				22906D082F53137A0016B103 /* ИСПРАВЛЕНИЕ_API.md */,
+				22906D0A2F531A2A0016B103 /* ФИНАЛЬНЫЕ_ИСПРАВЛЕНИЯ.md */,
+				22906D0B2F531BF00016B103 /* РЕШЕНИЕ_ПРОБЛЕМЫ.md */,
+				22906D0D2F531E980016B103 /* WEBM_ГОТОВО.md */,
 			);
 			path = Transcription;
 			sourceTree = "<group>";
@@ -238,7 +307,6 @@
 			packageReferences = (
 				95CED460C140EF50F901FEEF /* XCRemoteSwiftPackageReference "FluidAudio" */,
 			);
-			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -253,10 +321,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				22906D002F5310B60016B103 /* AlignmentDiagnostics.swift in Sources */,
+				22906CFC2F53106F0016B103 /* AudioDiagnostics.swift in Sources */,
 				33A9D6ACFFF76A625C942289 /* AudioConverter.swift in Sources */,
 				46698312D2C090CB8A208A18 /* AudioFile.swift in Sources */,
 				7C0EFA85DA639445DBD6987B /* ContentView.swift in Sources */,
 				0E0C67627C79DE10F51E5675 /* DiarizationService.swift in Sources */,
+				22906CFE2F5310930016B103 /* DiarizationDiagnostics.swift in Sources */,
 				F37E37E9DBF14D1CBACC8F5A /* EchoApp.swift in Sources */,
 				93F75467E1A64BBAAF8DA140 /* ExportService.swift in Sources */,
 				0AC6A142F4A307309B544453 /* ImportView.swift in Sources */,

@@ -10,8 +10,12 @@ final class ImportViewModel: ObservableObject {
     @Published var error: String?
 
     private let supportedExtensions: Set<String> = [
-        "mp3", "m4a", "wav", "aac", "ogg", "flac", "opus",
-        "mp4", "mov", "m4v", "mkv"
+        // Аудио форматы
+        "mp3", "m4a", "wav", "aac", "ogg", "flac", "opus", "caf", "aiff", "aif",
+        // Видео форматы
+        "mp4", "mov", "m4v", "mkv", "avi", "3gp",
+        // WebM (аудио и видео)
+        "webm"
     ]
 
     // MARK: – Drop handler

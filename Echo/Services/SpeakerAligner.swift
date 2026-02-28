@@ -1,18 +1,62 @@
 import Foundation
 import FluidAudio
 
-/// Назначает индекс спикера каждому ASR-сегменту
-/// по максимальному перекрытию с сегментами диаризации.
+/// Выравнивает токены ASR с сегментами диаризации.
+///
+/// Основной подход — **diarization-driven**:
+/// вместо того чтобы разбивать ASR-вывод на сегменты и потом назначать спикеров,
+/// мы используем сегменты диаризации как опорную структуру и распределяем
+/// токены ASR по этим сегментам. Это решает проблему, когда Parakeet
+/// возвращает один гигантский сегмент для длинного аудио.
 struct SpeakerAligner {
 
-    // MARK: – Публичные методы
+    // MARK: – Основной метод (diarization-driven)
 
-    /// Выравнивает ASR-сегменты с результатом диаризации.
+    /// Строит сегменты из токенов ASR, используя диаризацию как опорную структуру.
     ///
-    /// Для каждого сегмента находит спикера с наибольшим временным перекрытием.
-    /// Если перекрытия нет — возвращает `speakerIndex == -1`.
+    /// Алгоритм:
+    /// 1. Для каждого сегмента диаризации собираем токены, чей `startTime` попадает в этот диапазон.
+    /// 2. Объединяем соседние сегменты одного спикера (убираем «лесенку» коротких реплик).
     ///
-    /// - Returns: Массив кортежей (сегмент, индекс спикера).
+    /// Если токенов нет — пропорционально распределяем текст по сегментам диаризации.
+    ///
+    /// - Returns: Массив `(text, startTime, endTime, speakerIndex)` в хронологическом порядке.
+    func buildSegments(
+        from asrResult: ASRResult,
+        diarization: DiarizationResult
+    ) -> [(text: String, startTime: Double, endTime: Double, speakerIndex: Int)] {
+        let dSegs = diarization.segments
+        guard !dSegs.isEmpty else { return [] }
+
+        let idToIndex = buildSpeakerIndex(from: dSegs)
+
+        if let tokens = asrResult.tokenTimings, !tokens.isEmpty {
+            print("✅ Diarization-driven: \(tokens.count) токенов → \(dSegs.count) сегментов диаризации")
+            let raw = buildFromTokens(tokens: tokens, dSegs: dSegs, idToIndex: idToIndex)
+            let merged = mergeAdjacentSameSpeaker(raw)
+            print("   Итого после слияния: \(merged.count) сегментов")
+            return merged
+        }
+
+        print("⚠️  Нет токенов с таймингами — пропорциональное распределение текста")
+        let raw = buildFromPlainText(
+            text: asrResult.text,
+            duration: asrResult.duration,
+            dSegs: dSegs,
+            idToIndex: idToIndex
+        )
+        return mergeAdjacentSameSpeaker(raw)
+    }
+
+    /// Количество уникальных спикеров в результате диаризации.
+    func speakerCount(from diarization: DiarizationResult) -> Int {
+        Set(diarization.segments.map(\.speakerId)).count
+    }
+
+    // MARK: – Устаревший метод (оставлен для совместимости)
+
+    /// Назначает индекс спикера каждому ASR-сегменту по максимальному перекрытию.
+    /// Не используется при diarization-driven подходе.
     func align(
         segments: [RawSegment],
         diarization: DiarizationResult
@@ -21,10 +65,7 @@ struct SpeakerAligner {
         guard !dSegs.isEmpty else {
             return segments.map { ($0, -1) }
         }
-
-        // Стабильный маппинг speakerId → Int (в порядке первого появления)
         let idToIndex = buildSpeakerIndex(from: dSegs)
-
         return segments.map { seg in
             let idx = dominantSpeaker(
                 from: seg.startTime,
@@ -36,12 +77,102 @@ struct SpeakerAligner {
         }
     }
 
-    /// Количество уникальных спикеров в результате диаризации.
-    func speakerCount(from diarization: DiarizationResult) -> Int {
-        Set(diarization.segments.map(\.speakerId)).count
+    // MARK: – Приватные методы
+
+    /// Распределяет токены по сегментам диаризации.
+    private func buildFromTokens(
+        tokens: [TokenTiming],
+        dSegs: [TimedSpeakerSegment],
+        idToIndex: [String: Int]
+    ) -> [(text: String, startTime: Double, endTime: Double, speakerIndex: Int)] {
+        var result: [(text: String, startTime: Double, endTime: Double, speakerIndex: Int)] = []
+
+        for dSeg in dSegs {
+            let segStart = Double(dSeg.startTimeSeconds)
+            let segEnd   = Double(dSeg.endTimeSeconds)
+
+            // Токены, чей startTime попадает в диапазон этого сегмента диаризации
+            let segTokens = tokens.filter { $0.startTime >= segStart && $0.startTime < segEnd }
+            guard !segTokens.isEmpty else { continue }
+
+            let text = segTokens
+                .map { $0.token }
+                .joined()
+                .replacingOccurrences(of: "▁", with: " ")
+                .trimmingCharacters(in: .whitespaces)
+            guard !text.isEmpty else { continue }
+
+            let speakerIndex = idToIndex[dSeg.speakerId] ?? -1
+            result.append((
+                text: text,
+                startTime: segTokens.first!.startTime,
+                endTime: segTokens.last!.endTime,
+                speakerIndex: speakerIndex
+            ))
+        }
+
+        return result
     }
 
-    // MARK: – Приватные методы
+    /// Пропорционально распределяет слова текста по сегментам диаризации.
+    /// Используется как фолбэк, если токены не содержат таймингов.
+    private func buildFromPlainText(
+        text: String,
+        duration: TimeInterval,
+        dSegs: [TimedSpeakerSegment],
+        idToIndex: [String: Int]
+    ) -> [(text: String, startTime: Double, endTime: Double, speakerIndex: Int)] {
+        let words = text.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
+        guard !words.isEmpty else { return [] }
+
+        let totalDur = dSegs.reduce(0.0) { $0 + Double($1.endTimeSeconds - $1.startTimeSeconds) }
+        var wordIndex = 0
+        var result: [(text: String, startTime: Double, endTime: Double, speakerIndex: Int)] = []
+
+        for dSeg in dSegs {
+            guard wordIndex < words.count else { break }
+            let segDur  = Double(dSeg.endTimeSeconds - dSeg.startTimeSeconds)
+            let fraction = totalDur > 0 ? segDur / totalDur : 1.0 / Double(dSegs.count)
+            let wordCount = max(1, Int(Double(words.count) * fraction))
+            let endIdx = min(wordIndex + wordCount, words.count)
+
+            let segText = words[wordIndex..<endIdx].joined(separator: " ")
+            let speakerIndex = idToIndex[dSeg.speakerId] ?? -1
+            result.append((
+                text: segText,
+                startTime: Double(dSeg.startTimeSeconds),
+                endTime: Double(dSeg.endTimeSeconds),
+                speakerIndex: speakerIndex
+            ))
+            wordIndex = endIdx
+        }
+
+        return result
+    }
+
+    /// Объединяет подряд идущие сегменты одного спикера, разделённые паузой < 0.5 с.
+    /// Снижает фрагментацию и делает транскрипцию читаемее.
+    private func mergeAdjacentSameSpeaker(
+        _ segments: [(text: String, startTime: Double, endTime: Double, speakerIndex: Int)]
+    ) -> [(text: String, startTime: Double, endTime: Double, speakerIndex: Int)] {
+        var merged: [(text: String, startTime: Double, endTime: Double, speakerIndex: Int)] = []
+        for seg in segments {
+            if var last = merged.last,
+               last.speakerIndex == seg.speakerIndex,
+               seg.startTime - last.endTime < 0.5 {
+                last = (
+                    text: last.text + " " + seg.text,
+                    startTime: last.startTime,
+                    endTime: seg.endTime,
+                    speakerIndex: last.speakerIndex
+                )
+                merged[merged.count - 1] = last
+            } else {
+                merged.append(seg)
+            }
+        }
+        return merged
+    }
 
     private func buildSpeakerIndex(from segments: [TimedSpeakerSegment]) -> [String: Int] {
         var map: [String: Int] = [:]
