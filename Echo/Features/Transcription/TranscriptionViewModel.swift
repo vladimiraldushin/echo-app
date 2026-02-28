@@ -1,6 +1,5 @@
 import Foundation
 import SwiftUI
-import FluidAudio  // Для DiarizerConfig
 
 @MainActor
 final class TranscriptionViewModel: ObservableObject {
@@ -57,7 +56,6 @@ final class TranscriptionViewModel: ObservableObject {
 
     private let converter = AudioConverter()
     private let whisperService = WhisperTranscriptionService()
-    private let diarizationService = DiarizationService()
     private let aligner = SpeakerAligner()
     private let audioDiagnostics = AudioDiagnostics()
 
@@ -83,13 +81,6 @@ final class TranscriptionViewModel: ObservableObject {
                 print("⏳ Загрузка моделей WhisperKit...")
                 try await whisperService.prepareModels()
                 print("✅ WhisperKit готов\n")
-            }
-
-            // 2б. Подготовка диаризации (FluidAudio)
-            if !diarizationService.modelsReady {
-                print("⏳ Загрузка моделей диаризации...")
-                try await diarizationService.prepareModels()
-                print("✅ Модели диаризации готовы\n")
             }
 
             // 3. Транскрипция через WhisperKit (Whisper large-v3, русский)
@@ -120,50 +111,21 @@ final class TranscriptionViewModel: ObservableObject {
                 print("   • Диапазон: [\(String(format: "%.2f", firstToken.startTime))s – \(String(format: "%.2f", lastToken.endTime))s]")
             }
 
-            // 4. Диаризация (определение спикеров, FluidAudio)
+            // 4. Диаризация + выравнивание (NativeDiarizer — спектральные признаки + k-means)
             state = .diarizing
 
             print("═══════════════════════════════════════════════════════════════")
-            print("🎙️  ЭТАП 2: ДИАРИЗАЦИЯ (ОПРЕДЕЛЕНИЕ СПИКЕРОВ)")
+            print("🎙️  ЭТАП 2: ДИАРИЗАЦИЯ (NativeDiarizer — спектральные признаки)")
             print("═══════════════════════════════════════════════════════════════\n")
 
-            // Оптимизированная конфигурация для телефонных разговоров:
-            //   stepRatio  0.1 — шаг 1с вместо 2с, в 2 раза точнее обнаруживает смену спикера
-            //   Fb = 17    — агрессивное разделение (VBx recall), рекомендация авторов VBx для 2-3 спикеров
-            //   minSegment 0.5 — не выбрасывать короткие реплики (< 1с)
-            var diarizationConfig = OfflineDiarizerConfig.default
-            diarizationConfig.segmentationStepRatio = 0.1
-            diarizationConfig.Fb = 17.0
-            diarizationConfig.minSegmentDuration = 0.5
+            let numSpeakers = expectedSpeakers > 0 ? expectedSpeakers : 2
+            print("⚙️  Число спикеров: \(numSpeakers)")
 
-            if expectedSpeakers > 0 {
-                diarizationConfig = diarizationConfig.withSpeakers(exactly: expectedSpeakers)
-                print("⚙️  Конфигурация диаризации:")
-                print("   • Режим: фиксированное число спикеров = \(expectedSpeakers)")
-            } else {
-                diarizationConfig = diarizationConfig.withSpeakers(exactly: 2)
-                print("⚙️  Конфигурация диаризации:")
-                print("   • Режим: телефонный звонок (по умолчанию 2 спикера)")
-            }
-            print("   • stepRatio=0.1, Fb=17.0, minSegment=0.5s\n")
-
-            let diarizationResult = try await diarizationService.diarize(
-                samples: samples,
-                config: diarizationConfig
+            let aligned = aligner.buildSegments(
+                from: asrResult,
+                audioSamples: samples,
+                numSpeakers: numSpeakers
             )
-
-            // Диагностика диаризации
-            let diarizationAnalysis = DiarizationDiagnostics.analyze(diarizationResult)
-            print(diarizationAnalysis.description)
-            print(DiarizationDiagnostics.visualizeTimeline(diarizationResult, width: 60))
-
-            // 5. Выравнивание: diarization-driven сегментация
-            print("═══════════════════════════════════════════════════════════════")
-            print("🔗 ЭТАП 3: ВЫРАВНИВАНИЕ (СЛОВА → СЕГМЕНТЫ ДИАРИЗАЦИИ)")
-            print("═══════════════════════════════════════════════════════════════\n")
-
-            let aligned = aligner.buildSegments(from: asrResult, diarization: diarizationResult)
-            let numSpeakers = aligner.speakerCount(from: diarizationResult)
 
             print("\n📋 Примеры назначений:")
             for (i, seg) in aligned.prefix(5).enumerated() {
@@ -171,7 +133,7 @@ final class TranscriptionViewModel: ObservableObject {
                 print("       [\(String(format: "%.2f", seg.startTime))s – \(String(format: "%.2f", seg.endTime))s]\n")
             }
 
-            // 6. Сборка результата
+            // 5. Сборка результата
             print("═══════════════════════════════════════════════════════════════")
             print("✅ СБОРКА ФИНАЛЬНОГО РЕЗУЛЬТАТА")
             print("═══════════════════════════════════════════════════════════════\n")

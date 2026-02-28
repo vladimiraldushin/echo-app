@@ -31,6 +31,7 @@
 		AA01BB02CC03DD04EE05FF06 /* WhisperKit in Frameworks */ = {isa = PBXBuildFile; productRef = AA01BB02CC03DD04EE05FF07 /* WhisperKit */; };
 		AA01BB02CC03DD04EE05FF08 /* EchoASRResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01BB02CC03DD04EE05FF09 /* EchoASRResult.swift */; };
 		AA01BB02CC03DD04EE05FF10 /* WhisperTranscriptionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01BB02CC03DD04EE05FF11 /* WhisperTranscriptionService.swift */; };
+		AA01BB02CC03DD04EE05FF14 /* NativeDiarizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01BB02CC03DD04EE05FF13 /* NativeDiarizer.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -99,6 +100,7 @@
 		FFD91D91F199395EEC461241 /* TranscriptionResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionResult.swift; sourceTree = "<group>"; };
 		AA01BB02CC03DD04EE05FF09 /* EchoASRResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EchoASRResult.swift; sourceTree = "<group>"; };
 		AA01BB02CC03DD04EE05FF11 /* WhisperTranscriptionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhisperTranscriptionService.swift; sourceTree = "<group>"; };
+		AA01BB02CC03DD04EE05FF13 /* NativeDiarizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeDiarizer.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -167,6 +169,7 @@
 				1EAE19C4E3EE9EF7594BC2EE /* AudioConverter.swift */,
 				03A1883B5299DCA572E86351 /* DiarizationService.swift */,
 				5C76ED05AEAE9C3033257BDC /* ExportService.swift */,
+				AA01BB02CC03DD04EE05FF13 /* NativeDiarizer.swift */,
 				B584EBE4297B797B3329C0CE /* SpeakerAligner.swift */,
 				30A2B2B47200397A69DF9F02 /* TranscriptionService.swift */,
 				AA01BB02CC03DD04EE05FF11 /* WhisperTranscriptionService.swift */,
@@ -351,6 +354,7 @@
 				FEF7A06405C68EF27D61F6F5 /* TranscriptionService.swift in Sources */,
 				94B5897F037055F0AB5E284B /* TranscriptionView.swift in Sources */,
 				AA01BB02CC03DD04EE05FF10 /* WhisperTranscriptionService.swift in Sources */,
+				AA01BB02CC03DD04EE05FF14 /* NativeDiarizer.swift in Sources */,
 				47AE5C04F686B35425024872 /* TranscriptionViewModel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
