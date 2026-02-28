@@ -17,7 +17,6 @@ struct TranscriptionView: View {
         }
         .frame(minWidth: 700, minHeight: 500)
         .toolbar { toolbarContent }
-        .task { await vm.process(file: file) }
     }
 
     // MARK: – Панель результата
@@ -36,7 +35,10 @@ struct TranscriptionView: View {
 
             // Контент
             switch vm.state {
-            case .idle, .converting, .transcribing, .diarizing:
+            case .idle:
+                readyToStartView
+
+            case .converting, .transcribing, .diarizing:
                 processingPlaceholder
 
             case .completed:
@@ -105,6 +107,32 @@ struct TranscriptionView: View {
             }
             .padding(.vertical, 8)
         }
+    }
+
+    // MARK: – Экран готовности (настройки до старта)
+
+    private var readyToStartView: some View {
+        VStack(spacing: 20) {
+            Spacer()
+            Image(systemName: "waveform.badge.checkmark")
+                .font(.system(size: 52))
+                .foregroundStyle(.secondary)
+            VStack(spacing: 6) {
+                Text("Файл готов к обработке")
+                    .font(.title3.weight(.medium))
+                Text("Настройте параметры справа и нажмите «Начать»")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            Button("Начать обработку") {
+                Task { await vm.process(file: file) }
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            .keyboardShortcut(.return, modifiers: .command)
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var processingPlaceholder: some View {
@@ -186,6 +214,15 @@ struct TranscriptionView: View {
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
+            }
+
+            // Повторная обработка
+            if case .completed = vm.state {
+                Button("Обработать повторно") {
+                    Task { await vm.process(file: file) }
+                }
+                .buttonStyle(.bordered)
+                .frame(maxWidth: .infinity)
             }
 
             // Экспорт
